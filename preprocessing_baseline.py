@@ -77,7 +77,7 @@ path_to_data = path_root + '/data/'
 
 # = = = = = = = = = = = = = = =
 
-def main(num_walks = 5, walk_length = 10, max_doc_size = 70, node2vec = True, p = 0.25, q = 4, pad_vec_idx = 1685894):
+def main(num_walks = 5, walk_length = 10, max_doc_size = 70, node2vec = False, p = 0.25, q = 4, pad_vec_idx = 1685894):
 
     start_time = time()
 
