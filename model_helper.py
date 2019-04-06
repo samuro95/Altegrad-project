@@ -72,7 +72,7 @@ def logistic_regression(x_train, target_train, x_val, target_val, embeddings, C 
     print('logreg done')
     return(score)
 
-def HAN(docs_train, target_train, embeddings, n_units, n_dense, drop_rate, n_context_vect, rnn = 'gru', method = 'sigmoid', is_GPU = True):
+def HAN(docs_train, target_train, embeddings, n_units, n_dense, n_rnn, drop_rate, n_context_vect, rnn = 'gru', method = 'sigmoid', is_GPU = True):
 
     if method == 'sigmoid' :
         min = np.min(target_train)
@@ -94,10 +94,13 @@ def HAN(docs_train, target_train, embeddings, n_units, n_dense, drop_rate, n_con
     #sent_wv = GaussianNoise(stddev=0.3)(sent_wv)
 
     sent_wv_dr = Dropout(drop_rate)(sent_wv)
+    sent_wa = sent_wv_dr
     if rnn == 'gru' :
-        sent_wa = bidir_gru(sent_wv_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            sent_wa = bidir_gru(sent_wa,n_units,is_GPU)
     if rnn == 'lstm' :
-        sent_wa = bidir_lstm(sent_wv_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            sent_wa = bidir_lstm(sent_wa,n_units,is_GPU)
     sent_att_vec,word_att_coeffs = AttentionWithContext(n_context_vect = n_context_vect, return_coefficients=True)(sent_wa)
     sent_att_vec_dr = Dropout(drop_rate)(sent_att_vec)
 
@@ -107,18 +110,21 @@ def HAN(docs_train, target_train, embeddings, n_units, n_dense, drop_rate, n_con
 
     doc_ints = Input(shape=(docs_train.shape[1],docs_train.shape[2],))
     sent_att_vecs_dr = TimeDistributed(sent_encoder)(doc_ints)
+    doc_sa = sent_att_vecs_dr
     if rnn == 'gru' :
-        doc_sa = bidir_gru(sent_att_vecs_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            doc_sa = bidir_gru(doc_sa,n_units,is_GPU)
     if rnn == 'lstm' :
-        doc_sa = bidir_lstm(sent_att_vecs_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            doc_sa = bidir_lstm(doc_sa,n_units,is_GPU)
     doc_att_vec,sent_att_coeffs = AttentionWithContext(n_context_vect = n_context_vect, return_coefficients=True)(doc_sa)
     doc_att_vec_dr = Dropout(drop_rate)(doc_att_vec)
 
     #doc_att_vec_dr = BatchNormalization()(doc_att_vec_dr)
 
-    # for k in range(n_dense) :
-    #     doc_att_vec_dr = Dense(units = int(n_units/2.), activation='relu')(doc_att_vec_dr)
-    #     doc_att_vec_dr = Dropout(0.2)(doc_att_vec_dr)
+    for k in range(n_dense) :
+         doc_att_vec_dr = Dense(units = int(n_units/2.), activation='relu')(doc_att_vec_dr)
+         doc_att_vec_dr = Dropout(0.2)(doc_att_vec_dr)
 
     #doc_att_vec_dr = BatchNormalization()(doc_att_vec_dr)
 
@@ -161,7 +167,7 @@ def HAN_learning(tgt, model, docs_train, target_train, docs_val, target_val, my_
     else:
         my_callbacks = [early_stopping]
 
-    model.fit(docs_train,
+    history = model.fit(docs_train,
               target_train,
               batch_size = batch_size,
               epochs = nb_epochs,
@@ -180,6 +186,6 @@ def HAN_learning(tgt, model, docs_train, target_train, docs_val, target_val, my_
     min_val_mse = min(val_mse)
     best_epoch = val_mse.index(min_val_mse) + 1
 
-    return(min_val_mse)
-
     print('* * * * * * * target',tgt,'done * * * * * * *')
+
+    return(min_val_mse,history)

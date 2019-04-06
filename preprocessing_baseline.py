@@ -83,15 +83,19 @@ def main(num_walks = 5, walk_length = 10, max_doc_size = 70, node2vec = False, p
 
     edgelists = os.listdir(path_to_data + 'edge_lists/')
     edgelists.sort(key=natural_keys) # important to maintain alignment with the targets!
-
+    adj_col = []
     docs = []
+    t = 0
     for idx,edgelist in enumerate(edgelists):
         g = nx.read_edgelist(path_to_data + 'edge_lists/' + edgelist) # construct graph from edgelist
+        adj = nx.to_numpy_matrix(g)
+        nodes = g.nodes()
         doc = generate_walks(g,num_walks,walk_length, node2vec = node2vec, p = p , q = q) # create the pseudo-document representation of the graph
         docs.append(doc)
-
         if idx % round(len(edgelists)/10) == 0:
             print(idx)
+            print('in sec :', time()-t)
+            t = time()
 
     print('documents generated')
 

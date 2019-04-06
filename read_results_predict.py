@@ -1,11 +1,13 @@
 import numpy as np
 import json
 import os
-from sklearn.linear_model import LogisticRegression
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.models import Model
-from keras.layers import BatchNormalization, GaussianNoise, CuDNNLSTM,LSTM, Input, Embedding, Dropout, Bidirectional, GRU, CuDNNGRU, TimeDistributed, Dense
+from keras.layers import Lambda, BatchNormalization, GaussianNoise, CuDNNLSTM,LSTM, Input, Embedding, Dropout, Bidirectional, GRU, CuDNNGRU, TimeDistributed, Dense
 from AttentionWithContext import AttentionWithContext
+from keras import regularizers
+from sklearn.metrics import mean_squared_error
+from keras import backend as K
 from keras import regularizers
 from sklearn.metrics import mean_squared_error
 import sys
@@ -69,7 +71,6 @@ def bidir_gru(my_seq,n_units,is_GPU):
 # = = = = = = = = = = = = = = =
 
 docs = np.load(path_to_data + 'documents.npy')
-embeddings = np.load(path_to_data + 'embeddings.npy')
 
 with open(path_to_data + 'train_idxs.txt', 'r') as file:
     train_idxs = file.read().splitlines()
@@ -84,7 +85,14 @@ docs_test = docs[test_idxs,:,:]
 
 # = = = = = TRAINING RESULTS = = = = =
 
-for tgt in range(4):
+for tgt in range(3,4):
+
+    if tgt == 3 :
+        embeddings = np.load(path_to_data + 'new_embeddings.npy')
+    else :
+        embeddings = np.load(path_to_data + 'embeddings.npy')
+        embeddings[:,5] = embeddings[:,5]/np.linalg.norm(embeddings[:,5])
+        embeddings[:,6] = embeddings[:,6]/np.linalg.norm(embeddings[:,6])
 
     print('* * * * * * *',tgt,'* * * * * * *')
 
@@ -123,12 +131,22 @@ for tgt in range(4):
 
     # * * * HAN * * *
 
+    # = = = = = hyper-parameters = = = = =
+
     # relevant hyper-parameters
     n_context_vect = 1
     n_units = 32
-    dense_units = 32
+    n_dense = 0
     drop_rate = 0 # prediction mode
     rnn = 'lstm'
+    method = 'linear'
+    n_rnn = 1
+
+    if method == 'sigmoid' :
+        min = np.min(target_train)
+        max = np.max(target_train)
+        d = np.abs(max - min)
+        target_train = (target_train + abs(min))/d
 
     sent_ints = Input(shape=(docs_test.shape[2],))
 
@@ -140,42 +158,47 @@ for tgt in range(4):
                         )(sent_ints)
 
     sent_wv_dr = Dropout(drop_rate)(sent_wv)
+    sent_wa = sent_wv_dr
     if rnn == 'gru' :
-        sent_wa = bidir_gru(sent_wv_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            sent_wa = bidir_gru(sent_wa,n_units,is_GPU)
     if rnn == 'lstm' :
-        sent_wa = bidir_lstm(sent_wv_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            sent_wa = bidir_lstm(sent_wa,n_units,is_GPU)
     sent_att_vec,word_att_coeffs = AttentionWithContext(n_context_vect = n_context_vect, return_coefficients=True)(sent_wa)
     sent_att_vec_dr = Dropout(drop_rate)(sent_att_vec)
     sent_encoder = Model(sent_ints,sent_att_vec_dr)
+    sent_encoder.summary()
 
     doc_ints = Input(shape=(docs_test.shape[1],docs_test.shape[2],))
     sent_att_vecs_dr = TimeDistributed(sent_encoder)(doc_ints)
+    doc_sa = sent_att_vecs_dr
     if rnn == 'gru' :
-        doc_sa = bidir_gru(sent_att_vecs_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            doc_sa = bidir_gru(doc_sa,n_units,is_GPU)
     if rnn == 'lstm' :
-        doc_sa = bidir_lstm(sent_att_vecs_dr,n_units,is_GPU)
+        for k in range(n_rnn) :
+            doc_sa = bidir_lstm(doc_sa,n_units,is_GPU)
     doc_att_vec,sent_att_coeffs = AttentionWithContext(n_context_vect = n_context_vect, return_coefficients=True)(doc_sa)
     doc_att_vec_dr = Dropout(drop_rate)(doc_att_vec)
 
-    doc_att_vec_dr = BatchNormalization()(doc_att_vec_dr)
+    #doc_att_vec_dr = BatchNormalization()(doc_att_vec_dr)
 
-    doc_att_vec_dr = Dense(units = dense_units, activation='relu')(doc_att_vec_dr)
+    for k in range(n_dense) :
+         doc_att_vec_dr = Dense(units = int(n_units/2.), activation='relu')(doc_att_vec_dr)
+         doc_att_vec_dr = Dropout(0.2)(doc_att_vec_dr)
 
-    doc_att_vec_dr = Dropout(0)(doc_att_vec_dr)
+    #doc_att_vec_dr = BatchNormalization()(doc_att_vec_dr)
 
-    doc_att_vec_dr = Dense(units = int(dense_units/2), activation='relu')(doc_att_vec_dr)
-
-    doc_att_vec_dr = Dropout(0)(doc_att_vec_dr)
-
-    doc_att_vec_dr = Dense(units = int(dense_units/2), activation='relu')(doc_att_vec_dr)
-
-    doc_att_vec_dr = Dropout(0)(doc_att_vec_dr)
-
-    doc_att_vec_dr = BatchNormalization()(doc_att_vec_dr)
-
-    preds = Dense(units=1, activation='linear')(doc_att_vec_dr)
+    if method == 'sigmoid' :
+        preds = Dense(units=1, activation='sigmoid')(doc_att_vec_dr)
+        preds = Lambda(lambda x: x*d - abs(min))(preds)
+    else :
+        doc_att_vec_dr = Dense(units = int(n_units/2.), activation='relu')(doc_att_vec_dr)
+        preds = Dense(units=1, activation='linear')(doc_att_vec_dr)
 
     model = Model(doc_ints,preds)
+    model.summary()
 
     model.load_weights(path_to_data + 'model_' + str(tgt))
 
