@@ -1,6 +1,6 @@
 # Altegrad-project
 
-# Pre-processing
+## Pre-processing
 
 In order to reproduce our results, firstly run `preprocessing_baseline.py` using the parameters: 
 
@@ -10,11 +10,14 @@ In order to reproduce our results, firstly run `preprocessing_baseline.py` using
 
 with all other parameters as given. 
 
-Run `get_node2vec.py` to get `new_embeddings.npy`.
+Run `get_node2vec.py` to get `new_embeddings.npy`. (node2vec embeddings, takes a number of hours)
 
-# Model
+## Model
 
 Run `main.py`.
 
 Our final choices for the model are in `model_helper.py`. 
 
+## Predictions
+
+To obtain predictions, run `read_results_predict.py`. 
