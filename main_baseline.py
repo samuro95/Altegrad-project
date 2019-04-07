@@ -19,16 +19,18 @@ sys.path.insert(0, path_to_code)
 
 # = = = = = hyper-parameters = = = = =
 
-n_context_vect = 1
+
 drop_rate = 0.5
 batch_size = 100
-nb_epochs = 20
+nb_epochs = 40
 my_optimizer = 'adam'
-my_patience = 4
+my_patience = 8
 method = 'linear'
 n_units= 32
 rnn = 'lstm'
-#n_dense = 0
+n_dense = 0
+n_rnn = 2
+n_context_vect = 1
 
 # = = = = = data loading = = = = =
 
@@ -66,20 +68,19 @@ for tgt in range(4):
     with open(path_to_data + 'targets/train/target_' + str(tgt) + '.txt', 'r') as file:
         target = file.read().splitlines()
 
+
     target_train = np.array([target[elt] for elt in idxs_select_train]).astype('float')
     target_val = np.array([target[elt] for elt in idxs_select_val]).astype('float')
 
-    print('data loaded')
-
-    n_dense = 0
-    n_rnn_tab = [1,2]
     tab = []
-    for n_rnn in n_rnn_tab :
+    n_units_tab = [32]
+    for n_units in n_units_tab :
+        docs_train = docs[train_idxs_new,:,:]
+        docs_val = docs[val_idxs,:,:]
         model = HAN(docs_train, target_train, embeddings, n_units, n_dense, n_rnn, drop_rate, n_context_vect, rnn = rnn , method = method, is_GPU = is_GPU)
         model.summary()
         score, history = HAN_learning(tgt, model, docs_train, target_train, docs_val, target_val, my_optimizer, my_patience, nb_epochs, batch_size, path_to_data)
         tab.append(score)
-
         plt.figure(tgt)
         plt.plot(history.history['loss'],)
         plt.plot(history.history['val_loss'])

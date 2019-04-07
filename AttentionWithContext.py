@@ -105,7 +105,6 @@ class AttentionWithContext(Layer):
 
         a_tab = [K.exp(ait) for ait in ait_tab]
 
-
         # apply mask after the exp. will be re-normalized next
         if mask is not None:
             # Cast the mask to floatX to avoid float64 upcasting in theano
@@ -114,8 +113,8 @@ class AttentionWithContext(Layer):
         # in some cases especially in the early stages of training the sum may be almost zero
         # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
         # a /= K.cast(K.sum(a, axis=1, keepdims=True), K.floatx())
+        
         a_tab = [a/K.cast(K.sum(a, axis=1, keepdims=True) + K.epsilon(), K.floatx()) for a in a_tab]
-
         a_tab = np.array([K.expand_dims(a) for a in a_tab])
         a = np.sum(a_tab,axis=0)
         weighted_input = x * a
