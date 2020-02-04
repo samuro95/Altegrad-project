@@ -1,4 +1,7 @@
 # Altegrad-project
+This project was realized for the Advanced learning for text and graph data (ALTEGRAD) MVA class.
+Lecturer : Michalis Vazirgiannis (Polytechnique)
+
 The goal of the data challenge is to implement a graph
 regression  problem  with  the  constraint  of  using  a  Hierar-
 chical Attention Network (HAN) architecture. 
@@ -7,6 +10,8 @@ The dataset is made up of 93,719 undirected,
 unweighted graphs.  Each graph is associated to four target
 values.  We build a regression model for each of the target
 variable. 
+
+You can find the written report of the experiment in the file report.pdf 
 
 ## Pre-processing
 
