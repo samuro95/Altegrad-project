@@ -1,4 +1,32 @@
 # Altegrad-project
+The goal of the data challenge is to implement a graph
+regression  problem  with  the  constraint  of  using  a  Hierar-
+chical Attention Network (HAN) architecture. The graph is
+first represented as a document whose words are the nodes
+and whose sentences are random walks sampled from the
+network. Then, the documents are vectorized as in standard
+NLP algorithms.  The HAN is build on top of this embed-
+ding layer.   The dataset is made up of 93,719 undirected,
+unweighted graphs.  Each graph is associated to four target
+values.  We build a regression model for each of the target
+variable. A basic HAN implemented in keras is given. The
+objective  is  to  optimize  the  different  levels  of  the  overall
+architecture, from the random walks to the final regression
+layer.  
+The goal of the data challenge is to implement a graph
+regression  problem  with  the  constraint  of  using  a  Hierar-
+chical Attention Network (HAN) architecture. The graph is
+first represented as a document whose words are the nodes
+and whose sentences are random walks sampled from the
+network. Then, the documents are vectorized as in standard
+NLP algorithms.  The HAN is build on top of this embed-
+ding layer.   The dataset is made up of 93,719 undirected,
+unweighted graphs.  Each graph is associated to four target
+values.  We build a regression model for each of the target
+variable. A basic HAN implemented in keras is given. The
+objective  is  to  optimize  the  different  levels  of  the  overall
+architecture, from the random walks to the final regression
+layer.  
 
 ## Pre-processing
 
